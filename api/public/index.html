@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Validator Dashboard</title>
+
+  <style>
+    body {
+      font-family: Arial;
+      background: #0f172a;
+      color: white;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #22c55e;
+      margin-bottom: 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 20px;
+    }
+
+    .card {
+      background: #1e293b;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+    }
+
+    .big {
+      font-size: 28px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .status-badge {
+      padding: 6px 12px;
+      border-radius: 20px;
+      display: inline-block;
+      font-weight: bold;
+    }
+
+    .connected {
+      background: #22c55e;
+      color: black;
+    }
+
+    .disconnected {
+      background: #ef4444;
+    }
+
+    .progress-bar {
+      width: 100%;
+      background: #020617;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+
+    .progress {
+      height: 20px;
+      background: linear-gradient(90deg, #22c55e, #4ade80);
+      width: 0%;
+    }
+
+    #qr-container {
+      display: none;
+    }
+
+    canvas {
+      background: white;
+      border-radius: 10px;
+      padding: 10px;
+    }
+
+    pre {
+      max-height: 250px;
+      overflow-y: auto;
+      background: #020617;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 13px;
+    }
+
+    button {
+      background: #22c55e;
+      border: none;
+      padding: 10px;
+      color: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    input {
+      padding: 8px;
+      border-radius: 6px;
+      border: none;
+    }
+    #toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    }
+
+    .toast {
+    background: #1e293b;
+    color: white;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    min-width: 250px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.4);
+    font-size: 14px;
+    opacity: 0;
+    transform: translateX(100%);
+    transition: all 0.3s ease;
+    }
+
+    .toast.show {
+    opacity: 1;
+    transform: translateX(0);
+    }
+
+    .toast.success {
+    border-left: 5px solid #22c55e;
+    }
+
+    .toast.error {
+    border-left: 5px solid #ef4444;
+    }
+
+    .toast.warning {
+    border-left: 5px solid #fbbf24;
+    }
+    button:hover {
+    opacity: 0.9;
+    transform: scale(1.02);
+    transition: all 0.2s;
+    }
+    .section {
+    margin-bottom: 30px;
+    }
+
+    .section-title {
+    font-size: 14px;
+    color: #94a3b8;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    }
+
+    .card {
+    background: linear-gradient(145deg, #1e293b, #0f172a);
+    border: 1px solid #1e293b;
+    }
+
+    .card:hover {
+    border-color: #22c55e;
+    transition: 0.3s;
+    }
+  </style>
+</head>
+
+<body>
+<h1>🚀 WhatsApp Validator</h1>
+
+<!-- ===================== -->
+<!-- 📊 RESUMO -->
+<!-- ===================== -->
+<div class="section">
+  <div class="section-title">Resumo</div>
+
+  <div class="grid">
+
+    <div class="card">
+      <div>Total</div>
+      <div id="total" class="big">0</div>
+    </div>
+
+    <div class="card">
+      <div>Processados</div>
+      <div id="done" class="big">0</div>
+    </div>
+
+    <div class="card">
+      <div>Pendentes</div>
+      <div id="pending" class="big">0</div>
+    </div>
+
+    <div class="card">
+      <div>Válidos</div>
+      <div id="valid" class="big" style="color:#22c55e;">0</div>
+    </div>
+
+    <div class="card">
+      <div>Inválidos</div>
+      <div id="invalid" class="big" style="color:#ef4444;">0</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===================== -->
+<!-- ⚙️ SISTEMA -->
+<!-- ===================== -->
+<div class="section">
+  <div class="section-title">Sistema</div>
+
+  <div class="grid">
+
+    <!-- WhatsApp -->
+    <div class="card">
+      <div>WhatsApp</div>
+      <div id="wa-status" class="status-badge disconnected">OFFLINE</div>
+    </div>
+
+    <!-- Fila -->
+    <div class="card">
+      <div>Fila</div>
+      <div id="queue-status" class="status-badge disconnected">PARADO</div>
+    </div>
+
+    <!-- Processando -->
+    <div class="card">
+      <div>Processando</div>
+      <div id="processing" class="big" style="color:#60a5fa;">0</div>
+    </div>
+
+    <!-- Erros -->
+    <div class="card">
+      <div>Erros</div>
+      <div id="errors" class="big" style="color:#f87171;">0</div>
+    </div>
+
+    <!-- Operação -->
+    <div class="card">
+      <div>⚡ Operação</div>
+      <div id="perf-status" class="big">OK</div>
+      <div style="font-size:12px; color:#94a3b8;">
+        Uso: <span id="daily">0 / 250</span><br>
+        Fila: <span id="queue-load">0</span>
+      </div>
+    </div>
+
+    <!-- Progresso -->
+    <div class="card" style="grid-column: span 2;">
+      <div>Progresso</div>
+
+      <div class="progress-bar">
+        <div id="progress" class="progress"></div>
+      </div>
+
+      <div id="percent" style="margin-top:5px;"></div>
+    </div>
+
+    <!-- QR Code -->
+    <div id="qr-container" class="card" style="display:none;">
+      <div>🔐 Conectar WhatsApp</div>
+      <canvas id="qrcode"></canvas>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===================== -->
+<!-- 🛠 OPERAÇÕES -->
+<!-- ===================== -->
+<div class="section">
+  <div class="section-title">Operações</div>
+
+  <div class="grid">
+
+    <div class="card">
+      <h3>Controle</h3>
+      <button id="startBtn" onclick="startSystem()">▶️ Iniciar</button>
+      <button onclick="stopSystem()">⏸ Parar</button>
+      <button onclick="disconnectWhatsApp()" style="background:#ef4444;">
+        🔌 Desconectar WA
+      </button>
+    </div>
+
+    <div class="card">
+      <h3>Base</h3>
+
+      <form id="uploadForm" style="display:flex; gap:10px;">
+        <input type="file" name="file" required />
+        <button type="submit">📤 Importar</button>
+      </form>
+
+      <br>
+
+      <button onclick="exportValid()" style="background:#3b82f6;">
+        ⬇️ Exportar
+      </button>
+
+      <button onclick="reset()" style="background:#ef4444;">
+        🗑️ Limpar
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ===================== -->
+<!-- 📜 LOGS -->
+<!-- ===================== -->
+<div class="section">
+  <div class="section-title">Logs</div>
+
+  <div class="card">
+    <pre id="log"></pre>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+<script>
+const socket = io();
+
+let startTime = Date.now();
+let currentFileId = null; // 🔥 Armazena o ID do arquivo atual
+
+// =====================
+// 📊 STATS
+// =====================
+let throughputHistory = [];
+const WINDOW_SIZE = 10;
+let lastDoneCount = null;
+let lastTime = Date.now();
+
+function updateStats() {
+    fetch('/stats')
+    .then(res => res.json())
+    .then(data => {
+        const total = parseInt(data.total);
+        const done = parseInt(data.done);
+        const pending = parseInt(data.pending);
+        const processing = parseInt(data.processing || 0);
+        const errors = parseInt(data.errors || 0);
+        const valid = parseInt(data.valid || 0);
+        const invalid = parseInt(data.invalid || 0);
+
+        document.getElementById('total').innerText = total;
+        document.getElementById('done').innerText = done;
+        document.getElementById('pending').innerText = pending;
+        document.getElementById('processing').innerText = processing;
+        document.getElementById('errors').innerText = errors;
+        document.getElementById('valid').innerText = valid;
+        document.getElementById('invalid').innerText = invalid;
+
+        const processed = done;
+        const percent = total ? ((processed / total) * 100).toFixed(2) : 0;
+        document.getElementById('progress').style.width = percent + '%';
+        document.getElementById('percent').innerText = percent + '%';
+        
+    });
+}
+const DAILY_LIMIT = 250;
+const INTERVAL = (24 * 60 * 60 * 1000) / DAILY_LIMIT;
+
+let lastProgressTime = Date.now();
+let avgRate = null;
+
+
+// =====================
+// 📅 DAILY USAGE
+// =====================
+function updateDaily() {
+    fetch('/daily')
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('daily').innerText =
+            `${data.used} / ${data.limit}`;
+    });
+}
+
+// =====================
+// ⚙️ STATUS
+// =====================
+async function updateStatus() {
+    const res = await fetch('/status');
+    const data = await res.json();
+
+    const el = document.getElementById('queue-status');
+
+    if (!data.whatsapp) {
+        el.innerText = 'AGUARDANDO WHATSAPP';
+        el.className = 'status-badge disconnected';
+        return;
+    }
+
+    if (data.running) {
+        el.innerText = 'RODANDO';
+        el.className = 'status-badge connected';
+    } else {
+        el.innerText = 'PAUSADO';
+        el.className = 'status-badge disconnected';
+    }
+}
+
+// =====================
+// 🚀 CONTROLE
+// =====================
+async function startSystem() {
+    // 🔥 pega status do sistema
+    const resStatus = await fetch('/status');
+    const status = await resStatus.json();
+
+    if (!status.whatsapp) {
+        showToast('WhatsApp não está conectado', 'warning');
+        return;
+    }
+
+    const resStats = await fetch('/stats');
+    const data = await resStats.json();
+
+    if (data.pending === 0 && data.processing === 0) {
+        showToast('⚠️ Não há números pendentes para processar.', 'warning');
+        return;
+    }
+
+    await fetch('/start', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            fileId: currentFileId || null
+        })
+    });
+
+    showToast('Sistema iniciado', 'success');
+
+    updateStatus();
+}
+
+async function stopSystem() {
+    await fetch('/stop', { method: 'POST' });
+    showToast('Sistema pausado', 'warning');
+    updateStatus();
+}
+
+// =====================
+// 📤 UPLOAD
+// =====================
+document.getElementById('uploadForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+
+    const btn = e.target.querySelector('button');
+    btn.disabled = true;
+    btn.innerText = 'Enviando...';
+
+    const res = await fetch('/upload', {
+        method: 'POST',
+        body: formData
+    });
+
+    const data = await res.json();
+    currentFileId = data.file_id; // 🔥 Salva o ID retornado
+
+    btn.disabled = false;
+    btn.innerText = '📤 Enviar';
+
+    showToast(`Upload concluído!`, 'success');
+    updateStats();
+});
+
+// =====================
+// 🔌 SOCKETS
+// =====================
+socket.on('status', (status) => {
+    updateWhatsAppStatus(status === 'connected');
+
+    if (status === 'connected') {
+        document.getElementById('qr-container').style.display = 'none';
+    }
+});
+socket.on('connect', async () => {
+    console.log('🔌 Socket conectado');
+
+    try {
+        const res = await fetch('/status');
+        const data = await res.json();
+
+        console.log('📡 Sync inicial:', data);
+
+        updateWhatsAppStatus(data.whatsapp);
+
+    } catch (err) {
+        console.error('Erro ao sincronizar status:', err);
+    }
+});
+socket.on('disconnect', () => {
+    updateWhatsAppStatus(false);
+    showToast('Conexão com servidor perdida', 'error');
+});
+
+function updateWhatsAppStatus(isConnected) {
+    const el = document.getElementById('wa-status');
+
+    if (isConnected) {
+        el.innerText = 'ONLINE';
+        el.className = 'status-badge connected';
+    } else {
+        el.innerText = 'OFFLINE';
+        el.className = 'status-badge disconnected';
+    }
+}
+async function updateStartButton() {
+    const resStatus = await fetch('/status');
+    const status = await resStatus.json();
+
+    const resStats = await fetch('/stats');
+    const stats = await resStats.json();
+
+    const btn = document.getElementById('startBtn');
+
+    if (!status.whatsapp || (stats.pending === 0 && stats.processing === 0)) {
+        btn.disabled = true;
+        btn.style.opacity = 0.5;
+        btn.style.cursor = 'not-allowed';
+    } else {
+        btn.disabled = false;
+        btn.style.opacity = 1;
+        btn.style.cursor = 'pointer';
+    }
+}
+
+socket.on('qr', (qr) => {
+    const container = document.getElementById('qr-container');
+    const canvas = document.getElementById('qrcode');
+
+    if (!qr) {
+        container.style.display = 'none';
+        return;
+    }
+
+    container.style.display = 'block';
+    QRCode.toCanvas(canvas, qr);
+});
+
+socket.on('progress', (data) => {
+    // Mantemos atualização de estatísticas
+});
+
+// 🔥 Listener de logs em tempo real
+socket.on('log', (log) => {
+    const container = document.getElementById('log');
+    const time = new Date(log.timestamp).toLocaleTimeString();
+    
+    let color = '#94a3b8'; // info
+    if (log.level === 'success') color = '#22c55e';
+    if (log.level === 'warning') color = '#fbbf24';
+    if (log.level === 'error') color = '#f87171';
+    const span = document.createElement('div');
+    if (log.type === 'system') {
+        span.style.fontWeight = 'bold';
+    }
+
+    
+    span.style.color = color;
+    span.innerHTML = `<span style="color: #64748b">[${time}]</span> <span style="font-weight: bold">[${log.type.toUpperCase()}]</span> ${log.message}`;
+    
+    container.appendChild(span);
+    container.scrollTop = container.scrollHeight; // mantém scroll no final (estilo terminal)
+});
+
+socket.on('daily', (data) => {
+    document.getElementById('daily').innerText =
+        `${data.used} / ${data.limit}`;
+});
+
+// =====================
+// 🔁 LOOP
+// =====================
+setInterval(updateStats, 5000);
+setInterval(updateDaily, 5000);
+setInterval(updateStatus, 5000);
+setInterval(updateStartButton, 5000);
+setInterval(updatePerformance, 5000);
+updatePerformance();
+updateStartButton();
+
+updateStats();
+updateDaily();
+updateStatus();
+
+// =====================
+// 🔄 RESET
+// =====================
+function reset() {
+    if (!confirm('Tem certeza que deseja apagar TODA a base?')) return;
+
+    fetch('/reset', { method: 'POST' })
+        .then(() => {
+            document.getElementById('log').innerHTML = '';
+            currentFileId = null;
+
+            showToast('Base resetada com sucesso', 'warning');
+
+            updateStats();
+            updateDaily();
+        });
+}
+
+function showToast(message, type = "info") {
+    const container = document.getElementById('toast-container');
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.innerText = message;
+
+    container.appendChild(toast);
+
+    // anima entrada
+    setTimeout(() => toast.classList.add('show'), 10);
+
+    // remove depois de 3s
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+function disconnectWhatsApp() {
+    if (!confirm('Tem certeza que deseja desconectar o WhatsApp?')) return;
+
+    socket.emit('disconnect-wa');
+
+    showToast('Desconectando WhatsApp...', 'warning');
+}
+
+function exportValid() {
+    showToast('Gerando arquivo...', 'info');
+
+    window.location.href = '/export';
+}
+// =====================
+// ⚡ PERFORMANCE / FILA
+// =====================
+async function updatePerformance() {
+    try {
+        const resQueue = await fetch('/queue-stats');
+        const queueData = await resQueue.json();
+
+        const totalQueue = (queueData.waiting || 0) + (queueData.active || 0);
+
+        document.getElementById('queue-load').innerText = totalQueue;
+
+        const resDaily = await fetch('/daily');
+        const daily = await resDaily.json();
+
+        const percent = (daily.used / daily.limit) * 100;
+
+        let status = 'OK';
+        let color = '#22c55e';
+
+        if (percent >= 80 && percent < 100) {
+            status = 'ALERTA';
+            color = '#fbbf24';
+        }
+
+        if (percent >= 100) {
+            status = 'LIMITE';
+            color = '#ef4444';
+        }
+
+        document.getElementById('perf-status').innerText = status;
+        document.getElementById('perf-status').style.color = color;
+
+        document.getElementById('perf-detail').innerText =
+            `${daily.used}/${daily.limit} hoje`;
+
+    } catch (err) {
+        console.error('Erro monitoramento:', err);
+    }
+}
+</script>
+<div id="toast-container"></div>
+</body>
+</html>

@@ -1,0 +1,26 @@
+# Node
+node_modules/
+npm-debug.log
+
+# Env
+.env
+
+# Docker
+docker-data/
+*.log
+
+# WhatsApp session (CRÍTICO)
+session/
+app/session/
+
+# Build
+dist/
+build/
+
+# Python (se usar scripts)
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+Thumbs.db
