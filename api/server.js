@@ -302,15 +302,34 @@ app.post('/reset', async (req, res) => {
 // =============================
 // 📥 EXPORT
 // =============================
-app.get('/export', async (req, res) => {
-    const result = await db.query(
-        "SELECT number FROM numbers WHERE valid=true"
-    );
+app.get('/export-all', async (req, res) => {
+    try {
+        const result = await db.query(`
+            SELECT file_id, lead_id, number, valid
+            FROM numbers
+            WHERE status = 'done'
+            ORDER BY id
+        `);
 
-    const csv = result.rows.map(r => r.number).join('\n');
+        let csv = 'file_id,lead_id,number,valid\n';
 
-    res.setHeader('Content-Type', 'text/csv');
-    res.send(csv);
+        for (const row of result.rows) {
+            const valid = row.valid === true ? 'true' : 'false';
+            csv += `${row.file_id},${row.lead_id},${row.number},${valid}\n`;
+        }
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader(
+            'Content-Disposition',
+            `attachment; filename="export_all.csv"`
+        );
+
+        res.send(csv);
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Erro ao exportar' });
+    }
 });
 
 // =============================

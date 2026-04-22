@@ -637,7 +637,13 @@ function disconnectWhatsApp() {
 function exportValid() {
     showToast('Gerando arquivo...', 'info');
 
-    window.location.href = '/export';
+    const link = document.createElement('a');
+    link.href = `/export-all`;
+    link.download = `export_all.csv`;
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 // =====================
 // ⚡ PERFORMANCE / FILA
