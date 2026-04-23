@@ -38,7 +38,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 let isFirstRun = true;
 
 let burstCount = 0;
-let maxBurst = getRandom(2, 4);
+let maxBurst = getRandom(4, 8);
 
 function getRandom(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -79,7 +79,7 @@ function getDelay() {
         const humanDelay = Math.random() * 75000 + 45000; // 45s – 120s
 
         // mistura comportamento + distribuição
-        delay = (delay * 0.3) + (humanDelay * 0.7);
+        delay = (delay * 0.6) + (humanDelay * 0.4);
 
         sendLog(
             `🛡️ Atividade (${burstCount}/${maxBurst})`,
@@ -88,7 +88,7 @@ function getDelay() {
         );
     } else {
         burstCount = 0;
-        maxBurst = getRandom(2, 4);
+        maxBurst = getRandom(4, 8);
 
         // pausa média
         const pause = Math.random() * 600000 + 300000; // 5–15 min
@@ -105,7 +105,7 @@ function getDelay() {
     // =============================
     // 💤 PAUSA LONGA (eventual)
     // =============================
-    if (Math.random() < 0.08) { // 8% de chance
+    if (Math.random() < 0.05) { // 8% de chance
         const longPause = Math.random() * 2400000 + 1200000; // 20–60 min
 
         delay += longPause;
